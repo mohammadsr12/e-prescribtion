@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Prescription</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="medicines.js"></script>
+
+    <style>
+        body { font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; }
+        .classic-font { font-family: 'Noto Serif Bengali', 'Kalpurush', serif; }
+
+    
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            html, body { height: auto !important; overflow: visible !important; background: white; margin: 0; padding: 0; color: black; }
+            #prescription-view, #print-area { display: block !important; height: auto !important; overflow: visible !important; }
+            .print-border { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+            @page { size: A4; margin: 1cm; }
+        }
+        
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 10px; }
+        .tag-btn { transition: all 0.1s ease-in-out; }
+        .tag-btn:active { transform: scale(0.95); }
+        .med-suggestion:hover { background-color: #eff6ff; cursor: pointer; }
+        .mod-btn { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #e5e7eb; cursor: pointer; border: 1px solid #d1d5db; transition: 0.2s; }
+        .mod-btn:hover { background: #d1d5db; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-indigo-900 text-white p-3 shadow-md flex justify-between items-center no-print z-50">
+        <h1 class="text-xl font-bold flex items-center gap-2">🦷 DentalRx Pro</h1>
+        <div class="flex gap-2">
+            <button onclick="switchView('assistant-view')" class="bg-indigo-700 px-5 py-2 rounded font-bold hover:bg-indigo-600 transition-colors">Assistant Panel</button>
+            <button onclick="switchView('doctor-view')" class="bg-teal-600 px-5 py-2 rounded font-bold hover:bg-teal-500 transition-colors">Doctor Panel</button>
+        </div>
+    </header>
+
+    <!-- 1. ASSISTANT PANEL -->
+    <div id="assistant-view" style="display: none;" class="flex-1 p-8 overflow-auto no-print">
+        <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-600">
+            <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">New Patient Entry.</h2>
+            <div class="space-y-4">
+                <div><label class="block text-sm font-bold text-gray-700">রোগীর নাম *</label><input type="text" id="a-name" class="w-full border p-2 rounded outline-none focus:border-indigo-500" placeholder=" "></div>
+                <div class="flex gap-4">
+                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">বয়স *</label><input type="text" id="a-age" class="w-full border p-2 rounded outline-none" placeholder=" "></div>
+                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">লিঙ্গ</label>
+                        <select id="a-gender" class="w-full border p-2 rounded outline-none"><option>পুরুষ</option><option>মহিলা</option></select>
+                    </div>
+                </div>
+                <div><label class="block text-sm font-bold text-gray-700">মোবাইল নাম্বার *</label><input type="text" id="a-phone" class="w-full border p-2 rounded outline-none" placeholder="01XXX"></div>
+                <button onclick="addPatient()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 mt-4"> Add The Patient. </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. DOCTOR WAITING LIST -->
+    <div id="doctor-view" style="display: block;" class="flex-1 p-8 overflow-auto no-print">
+        <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg border-t-4 border-teal-600">
+            <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">Waiting List</h2>
+            <table class="w-full text-left border-collapse">
+                <thead><tr class="bg-gray-100"><th class="p-2 border-b">SL</th><th class="p-2 border-b">নাম</th><th class="p-2 border-b">বয়স</th><th class="p-2 border-b text-right">Take Action </th></tr></thead>
+                <tbody id="waiting-list-body"></tbody>
+            </table>
+            <p id="empty-msg" class="text-center text-gray-500 py-4">No Patient Available!</p>
+        </div>
+    </div>
+
+    <!-- 3. PRESCRIPTION PANEL -->
+    <div id="prescription-view" style="display: none;" class="flex-1 flex-col h-full bg-gray-50 relative">
+        
+        <!-- Top Action Bar (Print & Back) -->
+        <div class="absolute top-4 right-4 flex gap-3 z-50 no-print">
+            <button onclick="window.print()" class="bg-green-600 text-white px-5 py-2 rounded shadow-md font-bold text-sm hover:bg-green-700 transition-transform hover:scale-105 flex items-center gap-2">
+                🖨️ Print / Save PDF
+            </button>
+            <button onclick="switchView('doctor-view')" class="bg-red-100 text-red-600 px-5 py-2 rounded shadow-md font-bold text-sm hover:bg-red-200">
+                ← Back
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-auto p-4 md:p-8 print-border" id="print-area">
+            <div class="max-w-[1000px] mx-auto bg-white shadow-xl min-h-[1050px] p-8 border mt-8 md:mt-0">
+                
+                <!-- Headers -->
+                <div class="border-b-2 border-indigo-900 pb-4 mb-4 flex justify-between items-center mt-6 md:mt-0">
+                    <div>
+                        <h1 class="text-3xl font-bold text-indigo-900 classic-font">Dr. Mohammad S R Monir</h1>
+                        <p class="font-bold text-gray-800 text-sm">BDS(CMC)</p>
+                        <p class="text-gray-700 text-sm">Dental and Oral Surgeon</p>
+                    </div>
+                    <div class="text-right">
+                        <h2 class="font-bold text-teal-700 text-xl classic-font">XYZ Dental Care </h2>
+                        <p class="text-gray-700 text-sm">Chattogram, Bangladesh</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center text-sm font-semibold border-b border-gray-400 pb-2 mb-6">
+                    <div id="p-name">Name: -</div>
+                    <div id="p-age">Age: -</div>
+                    <div id="p-gender">Sex: -</div>
+                    <div id="p-date" class="font-sans">Date: -</div>
+                </div>
+
+                <!-- Main Columns -->
+                <div class="flex gap-6 h-full">
+                    
+                    <!-- Left Sidebar (CC, OE, Dx) -->
+                    <div class="w-[35%] border-r pr-4 border-gray-300">
+                        
+                        <!-- C/C -->
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center border-b border-gray-300 pb-1 mb-2">
+                                <h3 class="font-bold text-gray-800">C/C (Complaints)</h3>
+                                <button onclick="openModal('cc')" class="no-print bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded font-bold hover:bg-indigo-200">+ Add</button>
+                            </div>
+                            <ul id="cc-list" class="pl-2 space-y-2 font-sans font-semibold text-gray-800"></ul>
+                        </div>
+
+                        <!-- O/E -->
+                        <div class="mb-4 mt-8">
+                            <div class="flex justify-between items-center border-b border-gray-300 pb-1 mb-2">
+                                <h3 class="font-bold text-gray-800">O/E (On Exam)</h3>
+                                <button onclick="openModal('oe')" class="no-print bg-teal-100 text-teal-700 text-xs px-2 py-1 rounded font-bold hover:bg-teal-200">+ Add</button>
+                            </div>
+                            <ul id="oe-list" class="pl-2 space-y-2 font-sans"></ul>
+                        </div>
+
+                        <!-- Diagnosis -->
+                        <div class="mb-4 mt-8">
+                             <div class="flex justify-between items-center border-b border-gray-300 pb-1 mb-2">
+                                <h3 class="font-bold text-gray-800">Diagnosis</h3>
+                                <button onclick="openModal('dx')" class="no-print bg-red-100 text-red-700 text-xs px-2 py-1 rounded font-bold hover:bg-red-200">+ Add</button>
+                            </div>
+                            <ul id="dx-list" class="list-disc pl-4 text-sm font-semibold space-y-2 text-red-700 font-sans"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Right Column (Rx) -->
+                    <div class="w-[65%] flex flex-col pl-2">
+                        <h2 class="text-5xl font-serif font-bold text-indigo-900 mb-6 font-sans">Rx</h2>
+                        
+                        <!-- Smart Prescription Templates -->
+                        <div class="bg-indigo-50 p-2 rounded mb-6 no-print border border-indigo-100">
+                            <span class="text-xs font-bold text-indigo-800 mr-2">Quick Prescribe-</span>
+                            <button onclick="applyTemplate('extraction')" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded shadow hover:bg-indigo-700">Teeth Removed</button>
+                            <button onclick="applyTemplate('infection')" class="bg-red-500 text-white text-xs px-3 py-1.5 rounded shadow hover:bg-red-600">Infection</button>
+                            <button onclick="applyTemplate('scaling')" class="bg-teal-500 text-white text-xs px-3 py-1.5 rounded shadow hover:bg-teal-600">Scaling</button>
+                        </div>
+
+                        <!-- All Medicines Search Box -->
+                        <div class="bg-gray-100 p-3 rounded mb-6 no-print relative border">
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="rx-search" onkeyup="searchMedicine()" class="flex-1 border border-gray-300 p-2 rounded text-sm outline-none focus:border-indigo-500" placeholder="Search Meds.." autocomplete="off">
+                                <select id="rx-dose" class="w-24 border p-2 rounded text-sm outline-none classic-font"><option>১+১+১</option><option>১+০+১</option><option>০+১+০</option><option>১+০+০</option><option>০+০+১</option><option>০+০+০</option></select>
+                                <select id="rx-time" class="w-28 border p-2 rounded text-sm outline-none"><option>খাওয়ার পর</option><option>খাওয়ার আগে</option><option>ভরা পেটে</option><option>কুলকুচি</option><option>ব্যথা হলে</option></select>
+                                <select id="rx-days" class="w-20 border p-2 rounded text-sm outline-none"><option>৩ দিন</option><option>৫ দিন</option><option>৭ দিন</option><option>১০ দিন</option><option>১৪ দিন</option><option>চলবে</option></select>
+                                <button onclick="addRxManual()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700">Add</button>
+                            </div>
+                            <div id="med-suggestions" class="absolute z-10 w-[60%] bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto hidden"></div>
+                        </div>
+
+                        <!-- Selected Medicines -->
+                        <ul id="rx-list" class="space-y-6 flex-1"></ul>
+
+                        <div class="mt-6 font-bold text-[15px] text-gray-800 classic-font border-t pt-4">
+                            পরবর্তী সাক্ষাৎ: <span contenteditable="true" class="border-b border-dashed no-print outline-none px-2 text-indigo-600">৭ দিন পর</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- MASTER MODAL -->
+    <div id="master-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex justify-center items-center z-[100] no-print">
+        <div class="bg-white w-11/12 md:w-3/4 max-w-5xl rounded-lg shadow-xl flex flex-col h-[85vh]">
+            
+            <div id="modal-header" class="p-4 border-b flex justify-between items-center text-white rounded-t-lg">
+                <h3 id="modal-title" class="text-xl font-bold">Master List</h3>
+                <button onclick="closeModal()" class="text-white hover:text-red-400 text-2xl font-bold">&times;</button>
+            </div>
+            
+            <div class="p-4 border-b bg-gray-50">
+                <input type="text" id="modal-search-input" onkeyup="filterModal()" placeholder="🔍 Search any symptom or disease..." class="w-full border-2 border-indigo-300 p-3 rounded-lg text-lg outline-none focus:border-indigo-600">
+            </div>
+
+            <div class="p-6 flex-1 overflow-y-auto bg-gray-100" id="modal-body">
+                <!-- Data will be injected here via JS -->
+            </div>
+
+            <div class="p-4 border-t flex justify-end bg-white rounded-b-lg">
+                <button onclick="closeModal()" class="px-8 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MASTER_CC = [
+            "Dental Caries", "Early Enamel Caries", "Dentin Caries", "Deep Caries", "Root Caries", "Pit and Fissure Caries", "Smooth Surface Caries", "Recurrent Caries", "Arrested Caries", "Rampant Caries", "Early Childhood Caries", "Nursing Bottle Caries", "Radiation-Associated Caries",
+            "Toothache (Odontalgia)", "Reversible Pulpitis", "Irreversible Pulpitis", "Acute Pulpitis", "Chronic Pulpitis", "Pulp Necrosis", "Pulp Degeneration", "Pulp Calcification", "Pulp Polyp", "Dentin Hypersensitivity", "Dentinal Hyperesthesia",
+            "Apical Periodontitis", "Acute Apical Periodontitis", "Chronic Apical Periodontitis", "Symptomatic Apical Periodontitis", "Asymptomatic Apical Periodontitis", "Periapical Abscess", "Acute Apical Abscess", "Chronic Apical Abscess", "Periapical Granuloma", "Periapical Cyst", "Phoenix Abscess", "Internal Root Resorption", "External Root Resorption", "Hypercementosis", "Tooth Ankylosis",
+            "Cracked Tooth", "Fractured Tooth", "Crown Fracture", "Root Fracture", "Crown-Root Fracture", "Chipped Tooth", "Tooth Attrition", "Tooth Abrasion", "Tooth Erosion", "Abfraction", "Tooth Discoloration", "Intrinsic Tooth Staining", "Extrinsic Tooth Staining", "Tooth Mobility", "Tooth Tenderness", "Tooth Sensitivity", "Excessive Tooth Wear", "Tooth Perforation", "Failed Dental Restoration", "Broken Filling", "Lost Filling", "Defective Crown",
+            "Gingivitis", "Plaque-Induced Gingivitis", "Chronic Gingivitis", "Acute Gingivitis", "Erythematous Gingivitis", "Edematous Gingivitis", "Gingival Bleeding", "Periodontitis", "Chronic Periodontitis", "Rapidly Progressing Periodontitis", "Stage I Periodontitis", "Stage II Periodontitis", "Stage III Periodontitis", "Stage IV Periodontitis", "Grade A Periodontitis", "Grade B Periodontitis", "Grade C Periodontitis", "Necrotizing Gingivitis", "Necrotizing Periodontitis", "Periodontal Abscess", "Gingival Abscess", "Periodontal Pocket", "Gingival Recession", "Gingival Enlargement", "Gingival Hyperplasia", "Gingival Fibromatosis", "Gingival Ulceration", "Gingival Pigmentation", "Mucogingival Defects", "Alveolar Bone Loss", "Furcation Involvement", "Periodontal Attachment Loss", "Peri-Implant Mucositis", "Peri-Implantitis", "Pyorrhea",
+            "Delayed Tooth Eruption", "Premature Tooth Eruption", "Impacted Tooth", "Embedded Tooth", "Partially Erupted Tooth", "Unerupted Tooth", "Retained Deciduous Tooth", "Premature Loss of Primary Teeth", "Supernumerary Teeth", "Hypodontia", "Oligodontia", "Anodontia", "Macrodontia", "Microdontia", "Gemination", "Fusion", "Dens Invaginatus", "Dens Evaginatus", "Taurodontism", "Enamel Hypoplasia", "Dentinogenesis Imperfecta", "Amelogenesis Imperfecta", "Dental Fluorosis", "Molar-Incisor Hypomineralization (MIH)",
+            "Malocclusion", "Dental Crowding", "Dental Spacing", "Midline Diastema", "Increased Overbite", "Increased Overjet", "Anterior Open Bite", "Posterior Open Bite", "Crossbite", "Underbite", "Deep Bite", "Scissor Bite", "Dental Midline Deviation", "Rotated Tooth", "Tilted Tooth", "Proclination", "Retroclination", "Bruxism", "Teeth Clenching", "Premature Dental Contact", "Occlusal Trauma",
+            "Pericoronitis", "Impacted Third Molar", "Wisdom Tooth Pain", "Wisdom Tooth Infection", "Operculitis", "Dental Abscess", "Dentoalveolar Abscess", "Odontogenic Cellulitis", "Facial Swelling of Dental Origin", "Odontogenic Sinus Tract", "Dental Fistula", "Trismus Due to Dental Infection", "Jaw Osteomyelitis", "Alveolar Osteitis", "Dry Socket",
+            "Tooth Concussion", "Tooth Subluxation", "Tooth Luxation", "Extrusive Luxation", "Lateral Luxation", "Intrusive Luxation", "Tooth Avulsion", "Traumatic Crown Fracture", "Traumatic Root Fracture", "Alveolar Fracture", "Tooth Displacement", "Traumatic Pulp Necrosis", "Post-Traumatic Tooth Discoloration", "Traumatic Occlusal Injury",
+            "Post-Extraction Pain", "Post-Extraction Bleeding", "Delayed Socket Healing", "Postoperative Infection", "Retained Root Fragment", "Oroantral Communication", "Oroantral Fistula", "Root Canal Treatment Failure", "Persistent Apical Periodontitis", "Post-Endodontic Pain", "Crown Failure", "Bridge Failure", "Denture-Related Ulcer", "Ill-Fitting Denture", "Dental Implant Failure", "Implant Loosening", "Implant Infection",
+            "Recurrent Aphthous Stomatitis", "Aphthous Ulcer", "Traumatic Oral Ulcer", "Oral Candidiasis", "Oral Thrush", "Herpes Labialis", "Herpetic Gingivostomatitis", "Oral Herpes Simplex Infection", "Angular Cheilitis", "Cheilitis", "Oral Lichen Planus", "Leukoplakia", "Erythroplakia", "Oral Submucous Fibrosis", "Geographic Tongue", "Fissured Tongue", "Burning Mouth Syndrome", "Oral Mucositis", "Contact Stomatitis", "Denture Stomatitis", "Mucocele", "Ranula", "Oral Papilloma", "Oral Fibroma", "Oral Leukokeratosis", "Oral Vesiculobullous Disease", "Pemphigus Vulgaris", "Mucous Membrane Pemphigoid", "Erythema Multiforme", "Behçet Disease with Oral Ulcers",
+            "Glossitis", "Atrophic Glossitis", "Median Rhomboid Glossitis", "Hairy Tongue", "Black Hairy Tongue", "Glossodynia", "Macroglossia", "Ankyloglossia", "Dysgeusia", "Ageusia", "Oral Paresthesia", "Lip Ulceration", "Lip Swelling", "Lip Trauma", "Xerostomia", "Hyposalivation", "Sialadenitis", "Sialolithiasis", "Salivary Duct Obstruction", "Temporomandibular Disorder (TMD)", "TMJ Pain", "TMJ Clicking", "TMJ Locking", "Limited Mouth Opening", "TMJ Dislocation", "Jaw Fracture",
+            "Facial Swelling", "Halitosis", "Loss of Vertical Dimension", "Bleeding Disorders", "Diabetes Mellitus History", "History of Root Canal Treatment"
+        ];
+
+        const MASTER_OE = [
+            "General Appearance: Normal", "Fever", "Facial Asymmetry", "Facial Swelling", "Facial Edema", 
+            "Facial Redness", "Facial Tenderness", "Facial Pain", "Facial Cellulitis", "Facial Deformity", 
+            "Facial Bruising", "Facial Laceration", "Lip Incompetence", "Lip Protrusion", "Lip Retraction", 
+            "Mouth Breathing", "Cervical Lymphadenopathy", "Submandibular Lymphadenopathy", "Submental Lymphadenopathy", 
+            "Preauricular Lymphadenopathy", "Enlarged Lymph Nodes", "Tender Lymph Nodes", "Fixed Lymph Nodes", 
+            "Reduced Mouth Opening", "Trismus", "Neck Swelling", "Neck Mass", "Head and Neck Tenderness", 
+            "Halitosis", "Signs of Dehydration",
+            "Dental Caries", "Incipient Caries", "Non-Cavitated Caries", "Cavitated Caries", "Enamel Caries", 
+            "Dentin Caries", "Deep Caries", "Root Caries", "Recurrent Caries", "Secondary Caries", "Cervical Caries", 
+            "Interproximal Caries", "Occlusal Caries", "Buccal Surface Caries", "Lingual Surface Caries", 
+            "Smooth Surface Caries", "Arrested Caries", "Rampant Caries", "Demineralization", "White Spot Lesion", 
+            "Brown Spot Lesion", "Black Discoloration", "Defective Enamel", "Enamel Hypoplasia", "Enamel Hypomineralization", 
+            "Enamel Craze Lines", "Tooth Surface Defect", "Tooth Perforation", "Exposed Dentin", "Exposed Root Surface", 
+            "Exposed Pulp", "Open Cavity", "Food Impaction", "Open Proximal Contact", "Defective Proximal Contact", 
+            "Overhanging Restoration", "Defective Filling", "Broken Restoration", "Lost Restoration", "Fractured Crown", 
+            "Fractured Root", "Cracked Tooth", "Chipped Tooth", "Tooth Wear", "Attrition", "Abrasion", "Erosion", "Abfraction",
+            "Tooth Discoloration", "Intrinsic Staining", "Extrinsic Staining", "Yellow Teeth", "Brown Teeth", "Grey Teeth", 
+            "Black Teeth", "White Opaque Spots", "Fluorosis", "Macrodontia", "Microdontia", "Supernumerary Tooth", 
+            "Missing Tooth", "Unerupted Tooth", "Partially Erupted Tooth", "Impacted Tooth", "Retained Primary Tooth", 
+            "Delayed Eruption", "Premature Eruption", "Tooth Malposition", "Tooth Rotation", "Tooth Tilting", 
+            "Tooth Migration", "Tooth Extrusion", "Tooth Intrusion", "Tooth Displacement", "Tooth Mobility", 
+            "Tooth Ankylosis", "Root Exposure", "Root Resorption", "Hypercementosis", "Tooth Transposition",
+            "Pulp Exposure", "Pulpal Tenderness", "Pulpal Sensitivity", "Abnormal Pulp Vitality", "Negative Pulp Sensibility Test", 
+            "Exaggerated Cold Response", "Lingering Cold Response", "Exaggerated Heat Response", "Pain on Percussion", 
+            "Pain on Palpation", "Tenderness to Biting", "Tenderness to Occlusion", "Apical Tenderness", "Periapical Swelling", 
+            "Periapical Sinus Tract", "Gingival Sinus Tract", "Dental Abscess", "Periapical Abscess", "Pulp Necrosis", 
+            "Pulp Canal Obliteration", "Pulp Calcification", "Internal Root Resorption", "External Root Resorption", 
+            "Widened Periodontal Ligament Space", "Loss of Lamina Dura", "Periapical Radiolucency", "Periapical Radiopacity", 
+            "Root Fracture", "Root Perforation",
+            "Gingival Redness", "Gingival Swelling", "Gingival Edema", "Gingival Bleeding", "Bleeding on Probing", 
+            "Spontaneous Gingival Bleeding", "Gingival Tenderness", "Gingival Pain", "Gingival Ulceration", "Gingival Necrosis", 
+            "Gingival Recession", "Gingival Enlargement", "Gingival Hyperplasia", "Gingival Fibrosis", "Gingival Pigmentation", 
+            "Gingival Depigmentation", "Gingival Discoloration", "Loss of Gingival Stippling", "Rolled Gingival Margins", 
+            "Blunted Gingival Papillae", "Bulbous Gingival Papillae", "Cratered Interdental Papillae", "Black Triangle", 
+            "Gingival Cleft", "Gingival Crater", "Gingival Fistula", "Gingival Abscess", "Gingival Suppuration", 
+            "Purulent Discharge", "Gingival Flap", "Operculum", "Pericoronal Inflammation", "Food Debris Around Gingiva", 
+            "Plaque Accumulation", "Calculus Accumulation", "Supragingival Calculus", "Subgingival Calculus", 
+            "Localized Gingival Inflammation", "Generalized Gingival Inflammation", "Mucogingival Defect", 
+            "Inadequate Attached Gingiva", "Reduced Keratinized Gingiva", "Aberrant Frenum Attachment", 
+            "High Frenum Attachment", "Gingival Trauma", "Denture-Induced Gingival Inflammation",
+            "Increased Probing Depth", "Periodontal Pocket", "Shallow Periodontal Pocket", "Moderate Periodontal Pocket", 
+            "Deep Periodontal Pocket", "Clinical Attachment Loss", "Suppuration on Probing", "Periodontal Abscess", 
+            "Periodontal Bone Loss", "Horizontal Bone Loss", "Vertical Bone Loss", "Angular Bone Defect", "Furcation Involvement", 
+            "Pathological Tooth Migration", "Tooth Flare", "Tooth Drifting", "Tooth Fremitus", "Occlusal Trauma", 
+            "Loss of Alveolar Crest Height", "Reduced Alveolar Bone Support", "Periodontal Tissue Necrosis", 
+            "Peri-Implant Bleeding", "Peri-Implant Pocketing", "Peri-Implant Suppuration", "Peri-Implant Bone Loss",
+            "Oral Ulcer", "Aphthous Ulcer", "Traumatic Ulcer", "Oral Candidiasis", "Linea Alba", "Cheek Biting", 
+            "Atrophic Glossitis", "Geographic Tongue", "Fissured Tongue", "Macroglossia", "Ankyloglossia", "Dry Lips", 
+            "Angular Cheilitis", "Palatal Erythema", "Sublingual Swelling", "Xerostomia", "Hyposalivation", 
+            "TMJ Tenderness", "TMJ Clicking", "TMJ Locking", "TMJ Dislocation", "Masseter Muscle Tenderness"
+        ];
+
+        const MASTER_DX = [
+            "Dental caries (enamel, dentin, or cementum caries)", "Recurrent or secondary caries", 
+            "Root caries", "Early childhood caries", "Rampant caries", "Dental erosion", 
+            "Attrition", "Abrasion", "Abfraction", "Cervical abrasion lesion", 
+            "Dentin hypersensitivity", "Fractured tooth", "Cracked tooth syndrome", 
+            "Fractured restoration", "Tooth wear", "Enamel hypoplasia", 
+            "Amelogenesis imperfecta", "Dentinogenesis imperfecta", "Dental fluorosis", 
+            "Tooth discoloration (intrinsic or extrinsic)",
+            "Normal pulp", "Reversible pulpitis", "Symptomatic irreversible pulpitis", 
+            "Asymptomatic irreversible pulpitis", "Pulp necrosis", "Previously treated tooth", 
+            "Previously initiated therapy", "Symptomatic apical periodontitis", 
+            "Asymptomatic apical periodontitis", "Acute apical abscess", "Chronic apical abscess", 
+            "Condensing osteitis", "Periapical cyst or granuloma", "Internal resorption", 
+            "External resorption", "Pulp calcification", 
+            "Traumatic dental injuries (concussion, subluxation, luxation, avulsion, crown fracture, root fracture)",
+            "Healthy periodontium", "Plaque-induced gingivitis", "Non-plaque-induced gingival disease", 
+            "Gingival enlargement or hyperplasia", "Acute necrotizing ulcerative gingivitis (ANUG)", 
+            "Necrotizing periodontitis", "Chronic periodontitis", "Aggressive periodontitis (or periodontitis by stage and grade)", 
+            "Periodontal abscess", "Gingival abscess", "Pericoronitis", "Peri-implant mucositis", 
+            "Peri-implantitis", "Gingival recession", "Perio-endo lesion", "Furcation involvement", 
+            "Food impaction", "Calculus deposits", "Mucogingival deformities", "Occlusal trauma",
+            "Recurrent aphthous stomatitis", "Oral lichen planus", "Oral candidiasis", 
+            "Herpetic gingivostomatitis", "Herpes labialis", "Leukoplakia", "Erythroplakia", 
+            "Oral submucous fibrosis", "Denture stomatitis", "Angular cheilitis", "Mucocele", 
+            "Ranula", "Frictional keratosis", "Geographic tongue", "Fissured tongue", 
+            "Xerostomia", "Burning mouth syndrome", "Traumatic ulcer", "Fibroma", 
+            "Pyogenic granuloma", "Suspected oral malignancy or premalignant lesion",
+            "Malocclusion (Angle Class I, II, III)", "Crowding", "Spacing", "Crossbite", 
+            "Open bite", "Deep bite", "Impacted tooth", "Partially erupted tooth", 
+            "Delayed eruption", "Retained deciduous tooth", "Congenitally missing teeth (hypodontia)", 
+            "Supernumerary teeth", "Ankyloglossia", "Cleft lip or palate",
+            "Impacted third molar", "Dry socket (alveolar osteitis)", "Odontogenic infection", 
+            "Dentoalveolar abscess", "Cellulitis", "Odontogenic cyst", "Odontogenic tumor", 
+            "Oroantral communication", "Sinusitis of dental origin", "Temporomandibular joint disorder", 
+            "Myofascial pain", "Bruxism", "Trigeminal neuralgia", "Atypical odontalgia", 
+            "Osteonecrosis of the jaw", "Osteomyelitis",
+            "Edentulism (partial or complete)", "Missing tooth", "Defective restoration", 
+            "Ill-fitting denture", "Loose or failed crown or bridge", "Failed implant", 
+            "Ridge resorption", "Loss of vertical dimension", "Worn dentition"
+        ];
+
+        let currentModalType = ''; 
+        let itemCounter = 0; 
+        let waitingList = [];
+        let rxCounter = 1;
+
+        function switchView(viewId) {
+            document.getElementById('assistant-view').style.display = 'none';
+            document.getElementById('doctor-view').style.display = 'none';
+            document.getElementById('prescription-view').style.display = 'none';
+            if (viewId === 'prescription-view') document.getElementById(viewId).style.display = 'flex';
+            else document.getElementById(viewId).style.display = 'block';
+            if (viewId === 'doctor-view') renderWaitingList();
+        }
+
+        function addPatient() {
+            const name = document.getElementById('a-name').value;
+            const age = document.getElementById('a-age').value;
+            const gender = document.getElementById('a-gender').value;
+            const phone = document.getElementById('a-phone').value;
+            if(!name || !age) { alert('নাম ও বয়স দিন!'); return; }
+            waitingList.push({ name, age, gender, phone, date: new Date().toLocaleDateString('en-GB') });
+            document.getElementById('a-name').value = ''; document.getElementById('a-age').value = ''; document.getElementById('a-phone').value = '';
+            switchView('doctor-view');
+        }
+
+        function renderWaitingList() {
+            const tbody = document.getElementById('waiting-list-body');
+            tbody.innerHTML = '';
+            document.getElementById('empty-msg').style.display = waitingList.length ? 'none' : 'block';
+            waitingList.forEach((p, i) => {
+                tbody.innerHTML += `<tr class="border-b hover:bg-teal-50"><td class="p-2 font-bold">${i + 1}</td><td class="p-2 font-bold">${p.name}</td><td class="p-2">${p.age} | ${p.gender}</td><td class="p-2 text-right"><button onclick="openPrescription(${i})" class="bg-teal-600 text-white px-4 py-1.5 rounded shadow text-sm font-bold">Rx দিন</button></td></tr>`;
+            });
+        }
+
+        function openPrescription(index) {
+            const p = waitingList[index];
+            document.getElementById('p-name').innerText = `Name: ${p.name}`;
+            document.getElementById('p-age').innerText = `Age: ${p.age}`;
+            document.getElementById('p-gender').innerText = `Sex: ${p.gender}`;
+            document.getElementById('p-date').innerText = `Date: ${p.date}`;
+            
+            ['cc-list', 'oe-list', 'dx-list', 'rx-list'].forEach(id => document.getElementById(id).innerHTML = '');
+            rxCounter = 1;
+            switchView('prescription-view');
+        }
+
+        function openModal(type) {
+            currentModalType = type;
+            const modal = document.getElementById('master-modal');
+            const header = document.getElementById('modal-header');
+            const title = document.getElementById('modal-title');
+            
+            if(type === 'cc') {
+                header.className = "p-4 border-b flex justify-between items-center text-white rounded-t-lg bg-indigo-900";
+                title.innerText = "Chief Complaints Master List";
+                renderModalBody(MASTER_CC);
+            } else if(type === 'oe') {
+                header.className = "p-4 border-b flex justify-between items-center text-white rounded-t-lg bg-teal-700";
+                title.innerText = "On Examination Master List";
+                renderModalBody(MASTER_OE);
+            } else if(type === 'dx') {
+                header.className = "p-4 border-b flex justify-between items-center text-white rounded-t-lg bg-red-700";
+                title.innerText = "Diagnosis Master List";
+                renderModalBody(MASTER_DX);
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('master-modal').classList.add('hidden');
+            document.getElementById('modal-search-input').value = '';
+        }
+
+        function renderModalBody(dataList) {
+            const container = document.getElementById('modal-body');
+            container.innerHTML = `<div class="flex flex-wrap gap-2">` + 
+                dataList.map(item => `<button onclick="addItemWithModifiers('${item}')" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-500 text-sm px-3 py-1.5 rounded shadow-sm transition-all text-left">${item}</button>`).join('')
+            + `</div>`;
+        }
+
+        function filterModal() {
+            const input = document.getElementById('modal-search-input').value.toLowerCase();
+            let dataList = [];
+            if (currentModalType === 'cc') dataList = MASTER_CC;
+            else if (currentModalType === 'oe') dataList = MASTER_OE;
+            else if (currentModalType === 'dx') dataList = MASTER_DX;
+            const filtered = dataList.filter(item => item.toLowerCase().includes(input));
+            renderModalBody(filtered);
+        }
+
+        function addItemWithModifiers(text) {
+            let listId = '';
+            if (currentModalType === 'cc') listId = 'cc-list';
+            else if (currentModalType === 'oe') listId = 'oe-list';
+            else if (currentModalType === 'dx') listId = 'dx-list';
+
+            const ul = document.getElementById(listId);
+            const uid = `item-${itemCounter++}`; 
+
+            let modifiersHTML = '';
+            if (currentModalType === 'cc' || currentModalType === 'oe') {
+                modifiersHTML = `
+                    <div class="no-print flex flex-wrap gap-1 mt-2">
+                        <span class="text-[11px] font-bold text-indigo-700 mr-1 mt-0.5">সাইড:</span>
+                        <button onclick="modifyText('${uid}', ' - ডান পাশে')" class="mod-btn">ডানে</button>
+                        <button onclick="modifyText('${uid}', ' - বাম পাশে')" class="mod-btn">বামে</button>
+                        <button onclick="modifyText('${uid}', ' - উপরের পাটিতে')" class="mod-btn">উপরে</button>
+                        <button onclick="modifyText('${uid}', ' - নিচের পাটিতে')" class="mod-btn">নিচে</button>
+                    </div>
+                    
+                    <div class="no-print flex flex-wrap gap-1 mt-2">
+                        <span class="text-[11px] font-bold text-indigo-700 mr-1 mt-0.5">সময়:</span>
+                        <button onclick="modifyText('${uid}', ' (১ দিন )')" class="mod-btn">১ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (২ দিন )')" class="mod-btn">২ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (৩ দিন )')" class="mod-btn">৩ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (১ সপ্তাহ)'')" class="mod-btn">১ সপ্তাহ</button>
+                        <button onclick="modifyText('${uid}', ' (১ মাস )')" class="mod-btn">১ মাস</button>
+                        <button onclick="modifyText('${uid}', ' (১ সপ্তাহের বেশি)')" class="mod-btn">১ সপ্তাহের বেশি</button>
+                        <button onclick="modifyText('${uid}', ' (১ মাসের বেশি)')" class="mod-btn">১ মাসের বেশি</button>
+                        
+                    </div>
+                `; 
+            }
+
+            const bulletStyle = (currentModalType === 'dx') ? 'text-red-700' : 'text-gray-800';
+
+            const liHTML = `
+                <li id="${uid}" class="relative group p-2 border rounded bg-white shadow-sm mb-2">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <span class="text-[15px] font-bold ${bulletStyle}" id="${uid}-text">■ ${text}</span>
+                            ${modifiersHTML}
+                        </div>
+                        <button onclick="document.getElementById('${uid}').remove()" class="text-red-500 no-print opacity-0 group-hover:opacity-100 font-bold ml-2 text-lg hover:text-red-700">✖</button>
+                    </div>
+                </li>
+            `;
+            ul.innerHTML += liHTML;
+            closeModal(); 
+        }
+
+        function modifyText(uid, modText) {
+            const textSpan = document.getElementById(`${uid}-text`);
+            textSpan.innerText += modText;
+        }
+
+        function searchMedicine() {
+            const input = document.getElementById('rx-search').value.toLowerCase();
+            const suggBox = document.getElementById('med-suggestions');
+            suggBox.innerHTML = '';
+            if(input.length < 2) { suggBox.classList.add('hidden'); return; }
+            if(typeof MEDICINES === 'undefined') return;
+            
+            let matchCount = 0;
+            for(let i = 0; i < MEDICINES.length; i++) {
+                if(MEDICINES[i].toLowerCase().includes(input)) {
+                    suggBox.innerHTML += `<div onclick="selectMed('${MEDICINES[i]}')" class="p-2 border-b text-sm med-suggestion font-sans">${MEDICINES[i]}</div>`;
+                    if(++matchCount >= 100) break;
+                }
+            }
+            suggBox.classList.remove('hidden');
+        }
+
+        function selectMed(medName) {
+            document.getElementById('rx-search').value = medName;
+            document.getElementById('med-suggestions').classList.add('hidden');
+        }
+
+        function addRxManual() {
+            const name = document.getElementById('rx-search').value;
+            const dose = document.getElementById('rx-dose').value;
+            const time = document.getElementById('rx-time').value;
+            const days = document.getElementById('rx-days').value;
+            if(!name) return;
+            document.getElementById('rx-list').innerHTML += `<li class="relative group"><p class="font-bold text-lg text-gray-900 font-sans">${rxCounter++}. ${name}</p><div class="flex text-[15px] text-gray-800 pl-5 mt-1 gap-x-6 font-medium classic-font"><span class="w-20">${dose}</span><span class="w-24">${time}</span><span>${days}</span></div><button onclick="this.parentElement.remove(); rxCounter--;" class="absolute top-0 right-0 text-red-500 bg-red-100 px-2 py-1 rounded no-print opacity-0 group-hover:opacity-100 text-xs">মুছুন</button></li>`;
+            document.getElementById('rx-search').value = '';
+        }
+
+        function applyTemplate(type) {
+            if(type === 'extraction') {
+                document.getElementById('rx-search').value = "Tab. Ketorol 10mg"; document.getElementById('rx-dose').value = "১+০+১"; document.getElementById('rx-time').value = "খাওয়ার পর"; document.getElementById('rx-days').value = "৩ দিন"; addRxManual();
+                document.getElementById('rx-search').value = "Cap. Amoxil 500mg"; document.getElementById('rx-dose').value = "১+১+১"; document.getElementById('rx-days').value = "৭ দিন"; addRxManual();
+            } else if(type === 'infection') {
+                document.getElementById('rx-search').value = "Tab. Furocef 500mg"; document.getElementById('rx-dose').value = "১+০+১"; document.getElementById('rx-days').value = "৭ দিন"; addRxManual();
+            } else if (type === 'scaling') {
+                document.getElementById('rx-search').value = "Hexisol Mouthwash"; document.getElementById('rx-dose').value = "০+০+০"; document.getElementById('rx-time').value = "কুলকুচি"; document.getElementById('rx-days').value = "৭ দিন"; addRxManual();
+            }
+        }
+    </script>
+</body>
+</html>
