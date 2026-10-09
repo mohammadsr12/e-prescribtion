@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Prescription</title>
+    <title>Advanced Dental E-Prescription (Cloud)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,11 +12,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="medicines.js"></script>
 
+    <!-- Firebase Compat SDK  -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         body { font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; }
         .classic-font { font-family: 'Noto Serif Bengali', 'Kalpurush', serif; }
 
-    
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
@@ -39,7 +42,7 @@
 
     <!-- Header -->
     <header class="bg-indigo-900 text-white p-3 shadow-md flex justify-between items-center no-print z-50">
-        <h1 class="text-xl font-bold flex items-center gap-2">🦷 DentalRx Pro</h1>
+        <h1 class="text-xl font-bold flex items-center gap-2">🦷 DentalRx Pro <span class="text-xs bg-green-500 px-2 py-0.5 rounded-full text-white ml-2">Cloud Synced</span></h1>
         <div class="flex gap-2">
             <button onclick="switchView('assistant-view')" class="bg-indigo-700 px-5 py-2 rounded font-bold hover:bg-indigo-600 transition-colors">Assistant Panel</button>
             <button onclick="switchView('doctor-view')" class="bg-teal-600 px-5 py-2 rounded font-bold hover:bg-teal-500 transition-colors">Doctor Panel</button>
@@ -49,17 +52,17 @@
     <!-- 1. ASSISTANT PANEL -->
     <div id="assistant-view" style="display: none;" class="flex-1 p-8 overflow-auto no-print">
         <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-600">
-            <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">New Patient Entry.</h2>
+            <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">New Patient Entry</h2>
             <div class="space-y-4">
-                <div><label class="block text-sm font-bold text-gray-700">রোগীর নাম *</label><input type="text" id="a-name" class="w-full border p-2 rounded outline-none focus:border-indigo-500" placeholder=" "></div>
+                <div><label class="block text-sm font-bold text-gray-700">রোগীর নাম *</label><input type="text" id="a-name" class="w-full border p-2 rounded outline-none focus:border-indigo-500" placeholder="রোগীর নাম লিখুন"></div>
                 <div class="flex gap-4">
-                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">বয়স *</label><input type="text" id="a-age" class="w-full border p-2 rounded outline-none" placeholder=" "></div>
+                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">বয়স *</label><input type="text" id="a-age" class="w-full border p-2 rounded outline-none" placeholder="উদাঃ 35"></div>
                     <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">লিঙ্গ</label>
                         <select id="a-gender" class="w-full border p-2 rounded outline-none"><option>পুরুষ</option><option>মহিলা</option></select>
                     </div>
                 </div>
-                <div><label class="block text-sm font-bold text-gray-700">মোবাইল নাম্বার *</label><input type="text" id="a-phone" class="w-full border p-2 rounded outline-none" placeholder="01XXX"></div>
-                <button onclick="addPatient()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 mt-4"> Add The Patient. </button>
+                <div><label class="block text-sm font-bold text-gray-700">মোবাইল নাম্বার *</label><input type="text" id="a-phone" class="w-full border p-2 rounded outline-none" placeholder="01XXX-XXXXXX"></div>
+                <button onclick="addPatient()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 mt-4 shadow-md"> Add The Patient </button>
             </div>
         </div>
     </div>
@@ -67,9 +70,9 @@
     <!-- 2. DOCTOR WAITING LIST -->
     <div id="doctor-view" style="display: block;" class="flex-1 p-8 overflow-auto no-print">
         <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg border-t-4 border-teal-600">
-            <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">Waiting List</h2>
+            <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">Live Waiting List</h2>
             <table class="w-full text-left border-collapse">
-                <thead><tr class="bg-gray-100"><th class="p-2 border-b">SL</th><th class="p-2 border-b">নাম</th><th class="p-2 border-b">বয়স</th><th class="p-2 border-b text-right">Take Action </th></tr></thead>
+                <thead><tr class="bg-gray-100"><th class="p-2 border-b w-12">SL</th><th class="p-2 border-b">নাম</th><th class="p-2 border-b">বয়স</th><th class="p-2 border-b text-right">Take Action </th></tr></thead>
                 <tbody id="waiting-list-body"></tbody>
             </table>
             <p id="empty-msg" class="text-center text-gray-500 py-4">No Patient Available!</p>
@@ -78,21 +81,13 @@
 
     <!-- 3. PRESCRIPTION PANEL -->
     <div id="prescription-view" style="display: none;" class="flex-1 flex-col h-full bg-gray-50 relative">
-        
-        <!-- Top Action Bar (Print & Back) -->
         <div class="absolute top-4 right-4 flex gap-3 z-50 no-print">
-            <button onclick="window.print()" class="bg-green-600 text-white px-5 py-2 rounded shadow-md font-bold text-sm hover:bg-green-700 transition-transform hover:scale-105 flex items-center gap-2">
-                🖨️ Print / Save PDF
-            </button>
-            <button onclick="switchView('doctor-view')" class="bg-red-100 text-red-600 px-5 py-2 rounded shadow-md font-bold text-sm hover:bg-red-200">
-                ← Back
-            </button>
+            <button onclick="window.print()" class="bg-green-600 text-white px-5 py-2 rounded shadow-md font-bold text-sm hover:bg-green-700 transition-transform hover:scale-105 flex items-center gap-2">🖨️ Print / Save PDF</button>
+            <button onclick="switchView('doctor-view')" class="bg-red-100 text-red-600 px-5 py-2 rounded shadow-md font-bold text-sm hover:bg-red-200">← Back</button>
         </div>
 
         <div class="flex-1 overflow-auto p-4 md:p-8 print-border" id="print-area">
             <div class="max-w-[1000px] mx-auto bg-white shadow-xl min-h-[1050px] p-8 border mt-8 md:mt-0">
-                
-                <!-- Headers -->
                 <div class="border-b-2 border-indigo-900 pb-4 mb-4 flex justify-between items-center mt-6 md:mt-0">
                     <div>
                         <h1 class="text-3xl font-bold text-indigo-900 classic-font">Dr. Mohammad S R Monir</h1>
@@ -112,13 +107,8 @@
                     <div id="p-date" class="font-sans">Date: -</div>
                 </div>
 
-                <!-- Main Columns -->
                 <div class="flex gap-6 h-full">
-                    
-                    <!-- Left Sidebar (CC, OE, Dx) -->
                     <div class="w-[35%] border-r pr-4 border-gray-300">
-                        
-                        <!-- C/C -->
                         <div class="mb-4">
                             <div class="flex justify-between items-center border-b border-gray-300 pb-1 mb-2">
                                 <h3 class="font-bold text-gray-800">C/C (Complaints)</h3>
@@ -126,8 +116,6 @@
                             </div>
                             <ul id="cc-list" class="pl-2 space-y-2 font-sans font-semibold text-gray-800"></ul>
                         </div>
-
-                        <!-- O/E -->
                         <div class="mb-4 mt-8">
                             <div class="flex justify-between items-center border-b border-gray-300 pb-1 mb-2">
                                 <h3 class="font-bold text-gray-800">O/E (On Exam)</h3>
@@ -135,8 +123,6 @@
                             </div>
                             <ul id="oe-list" class="pl-2 space-y-2 font-sans"></ul>
                         </div>
-
-                        <!-- Diagnosis -->
                         <div class="mb-4 mt-8">
                              <div class="flex justify-between items-center border-b border-gray-300 pb-1 mb-2">
                                 <h3 class="font-bold text-gray-800">Diagnosis</h3>
@@ -146,22 +132,17 @@
                         </div>
                     </div>
 
-                    <!-- Right Column (Rx) -->
                     <div class="w-[65%] flex flex-col pl-2">
                         <h2 class="text-5xl font-serif font-bold text-indigo-900 mb-6 font-sans">Rx</h2>
-                        
-                        <!-- Smart Prescription Templates -->
                         <div class="bg-indigo-50 p-2 rounded mb-6 no-print border border-indigo-100">
                             <span class="text-xs font-bold text-indigo-800 mr-2">Quick Prescribe-</span>
                             <button onclick="applyTemplate('extraction')" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded shadow hover:bg-indigo-700">Teeth Removed</button>
                             <button onclick="applyTemplate('infection')" class="bg-red-500 text-white text-xs px-3 py-1.5 rounded shadow hover:bg-red-600">Infection</button>
                             <button onclick="applyTemplate('scaling')" class="bg-teal-500 text-white text-xs px-3 py-1.5 rounded shadow hover:bg-teal-600">Scaling</button>
                         </div>
-
-                        <!-- All Medicines Search Box -->
                         <div class="bg-gray-100 p-3 rounded mb-6 no-print relative border">
                             <div class="flex gap-2 mb-2">
-                                <input type="text" id="rx-search" onkeyup="searchMedicine()" class="flex-1 border border-gray-300 p-2 rounded text-sm outline-none focus:border-indigo-500" placeholder="Search Meds.." autocomplete="off">
+                                <input type="text" id="rx-search" onkeyup="searchMedicine()" class="flex-1 border border-gray-300 p-2 rounded text-sm outline-none focus:border-indigo-500" placeholder="ঔষধ সার্চ করুন..." autocomplete="off">
                                 <select id="rx-dose" class="w-24 border p-2 rounded text-sm outline-none classic-font"><option>১+১+১</option><option>১+০+১</option><option>০+১+০</option><option>১+০+০</option><option>০+০+১</option><option>০+০+০</option></select>
                                 <select id="rx-time" class="w-28 border p-2 rounded text-sm outline-none"><option>খাওয়ার পর</option><option>খাওয়ার আগে</option><option>ভরা পেটে</option><option>কুলকুচি</option><option>ব্যথা হলে</option></select>
                                 <select id="rx-days" class="w-20 border p-2 rounded text-sm outline-none"><option>৩ দিন</option><option>৫ দিন</option><option>৭ দিন</option><option>১০ দিন</option><option>১৪ দিন</option><option>চলবে</option></select>
@@ -169,10 +150,7 @@
                             </div>
                             <div id="med-suggestions" class="absolute z-10 w-[60%] bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto hidden"></div>
                         </div>
-
-                        <!-- Selected Medicines -->
                         <ul id="rx-list" class="space-y-6 flex-1"></ul>
-
                         <div class="mt-6 font-bold text-[15px] text-gray-800 classic-font border-t pt-4">
                             পরবর্তী সাক্ষাৎ: <span contenteditable="true" class="border-b border-dashed no-print outline-none px-2 text-indigo-600">৭ দিন পর</span>
                         </div>
@@ -180,26 +158,19 @@
                 </div>
             </div>
         </div>
-        
     </div>
 
     <!-- MASTER MODAL -->
     <div id="master-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex justify-center items-center z-[100] no-print">
         <div class="bg-white w-11/12 md:w-3/4 max-w-5xl rounded-lg shadow-xl flex flex-col h-[85vh]">
-            
             <div id="modal-header" class="p-4 border-b flex justify-between items-center text-white rounded-t-lg">
                 <h3 id="modal-title" class="text-xl font-bold">Master List</h3>
                 <button onclick="closeModal()" class="text-white hover:text-red-400 text-2xl font-bold">&times;</button>
             </div>
-            
             <div class="p-4 border-b bg-gray-50">
                 <input type="text" id="modal-search-input" onkeyup="filterModal()" placeholder="🔍 Search any symptom or disease..." class="w-full border-2 border-indigo-300 p-3 rounded-lg text-lg outline-none focus:border-indigo-600">
             </div>
-
-            <div class="p-6 flex-1 overflow-y-auto bg-gray-100" id="modal-body">
-                <!-- Data will be injected here via JS -->
-            </div>
-
+            <div class="p-6 flex-1 overflow-y-auto bg-gray-100" id="modal-body"></div>
             <div class="p-4 border-t flex justify-end bg-white rounded-b-lg">
                 <button onclick="closeModal()" class="px-8 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700">Done</button>
             </div>
@@ -207,6 +178,104 @@
     </div>
 
     <script>
+        // ================= FIREBASE CLOUD SETUP =================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCd3q6gXZVIrDuUgIEM4JgPurVZpCs66lo",
+            authDomain: "e-prescribtion.firebaseapp.com",
+            projectId: "e-prescribtion",
+            storageBucket: "e-prescribtion.firebasestorage.app",
+            messagingSenderId: "249603255347",
+            appId: "1:249603255347:web:0d3adcab73c65aa5e90746"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ================= STATE =================
+        let currentModalType = ''; 
+        let itemCounter = 0; 
+        let waitingList = [];
+        let rxCounter = 1;
+
+        // ================= REAL-TIME DATABASE SYNC =================
+        db.collection("patients").orderBy("timestamp", "asc").onSnapshot((querySnapshot) => {
+            waitingList = [];
+            querySnapshot.forEach((doc) => {
+                waitingList.push({ id: doc.id, ...doc.data() });
+            });
+            renderWaitingList();
+        });
+
+        function addPatient() {
+            const name = document.getElementById('a-name').value;
+            const age = document.getElementById('a-age').value;
+            const gender = document.getElementById('a-gender').value;
+            const phone = document.getElementById('a-phone').value;
+            if(!name || !age) { alert('নাম ও বয়স দিন!'); return; }
+            
+            // Cloud Database এ সেভ করা হচ্ছে
+            db.collection("patients").add({
+                name: name,
+                age: age,
+                gender: gender,
+                phone: phone,
+                date: new Date().toLocaleDateString('en-GB'),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() // সিরিয়াল মেইনটেইন করার জন্য
+            });
+
+            document.getElementById('a-name').value = ''; 
+            document.getElementById('a-age').value = ''; 
+            document.getElementById('a-phone').value = '';
+            switchView('doctor-view');
+        }
+
+        function deletePatient(index) {
+            const patientId = waitingList[index].id;
+            if(confirm("আপনি কি এই রোগীকে লিস্ট থেকে মুছে ফেলতে চান? (Data will be permanently deleted)")) {
+                db.collection("patients").doc(patientId).delete();
+            }
+        }
+
+        function renderWaitingList() {
+            const tbody = document.getElementById('waiting-list-body');
+            tbody.innerHTML = '';
+            document.getElementById('empty-msg').style.display = waitingList.length ? 'none' : 'block';
+            
+            waitingList.forEach((p, i) => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-teal-50">
+                        <td class="p-2 font-bold">${i + 1}</td>
+                        <td class="p-2 font-bold text-gray-800">${p.name} <br> <span class="text-xs font-normal text-gray-500">${p.phone}</span></td>
+                        <td class="p-2">${p.age} | ${p.gender}</td>
+                        <td class="p-2 text-right">
+                            <button onclick="openPrescription(${i})" class="bg-teal-600 text-white px-3 py-1.5 rounded shadow text-sm font-bold">Rx দিন</button>
+                            <button onclick="deletePatient(${i})" class="bg-red-500 text-white px-3 py-1.5 rounded shadow text-sm font-bold ml-1">মুছুন</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function switchView(viewId) {
+            document.getElementById('assistant-view').style.display = 'none';
+            document.getElementById('doctor-view').style.display = 'none';
+            document.getElementById('prescription-view').style.display = 'none';
+            if (viewId === 'prescription-view') document.getElementById(viewId).style.display = 'flex';
+            else document.getElementById(viewId).style.display = 'block';
+        }
+
+        function openPrescription(index) {
+            const p = waitingList[index];
+            document.getElementById('p-name').innerText = `Name: ${p.name}`;
+            document.getElementById('p-age').innerText = `Age: ${p.age}`;
+            document.getElementById('p-gender').innerText = `Sex: ${p.gender}`;
+            document.getElementById('p-date').innerText = `Date: ${p.date}`;
+            
+            ['cc-list', 'oe-list', 'dx-list', 'rx-list'].forEach(id => document.getElementById(id).innerHTML = '');
+            rxCounter = 1;
+            switchView('prescription-view');
+        }
+
+        // ================= MASTER LISTS =================
         const MASTER_CC = [
             "Dental Caries", "Early Enamel Caries", "Dentin Caries", "Deep Caries", "Root Caries", "Pit and Fissure Caries", "Smooth Surface Caries", "Recurrent Caries", "Arrested Caries", "Rampant Caries", "Early Childhood Caries", "Nursing Bottle Caries", "Radiation-Associated Caries",
             "Toothache (Odontalgia)", "Reversible Pulpitis", "Irreversible Pulpitis", "Acute Pulpitis", "Chronic Pulpitis", "Pulp Necrosis", "Pulp Degeneration", "Pulp Calcification", "Pulp Polyp", "Dentin Hypersensitivity", "Dentinal Hyperesthesia",
@@ -317,52 +386,6 @@
             "Ridge resorption", "Loss of vertical dimension", "Worn dentition"
         ];
 
-        let currentModalType = ''; 
-        let itemCounter = 0; 
-        let waitingList = [];
-        let rxCounter = 1;
-
-        function switchView(viewId) {
-            document.getElementById('assistant-view').style.display = 'none';
-            document.getElementById('doctor-view').style.display = 'none';
-            document.getElementById('prescription-view').style.display = 'none';
-            if (viewId === 'prescription-view') document.getElementById(viewId).style.display = 'flex';
-            else document.getElementById(viewId).style.display = 'block';
-            if (viewId === 'doctor-view') renderWaitingList();
-        }
-
-        function addPatient() {
-            const name = document.getElementById('a-name').value;
-            const age = document.getElementById('a-age').value;
-            const gender = document.getElementById('a-gender').value;
-            const phone = document.getElementById('a-phone').value;
-            if(!name || !age) { alert('নাম ও বয়স দিন!'); return; }
-            waitingList.push({ name, age, gender, phone, date: new Date().toLocaleDateString('en-GB') });
-            document.getElementById('a-name').value = ''; document.getElementById('a-age').value = ''; document.getElementById('a-phone').value = '';
-            switchView('doctor-view');
-        }
-
-        function renderWaitingList() {
-            const tbody = document.getElementById('waiting-list-body');
-            tbody.innerHTML = '';
-            document.getElementById('empty-msg').style.display = waitingList.length ? 'none' : 'block';
-            waitingList.forEach((p, i) => {
-                tbody.innerHTML += `<tr class="border-b hover:bg-teal-50"><td class="p-2 font-bold">${i + 1}</td><td class="p-2 font-bold">${p.name}</td><td class="p-2">${p.age} | ${p.gender}</td><td class="p-2 text-right"><button onclick="openPrescription(${i})" class="bg-teal-600 text-white px-4 py-1.5 rounded shadow text-sm font-bold">Rx দিন</button></td></tr>`;
-            });
-        }
-
-        function openPrescription(index) {
-            const p = waitingList[index];
-            document.getElementById('p-name').innerText = `Name: ${p.name}`;
-            document.getElementById('p-age').innerText = `Age: ${p.age}`;
-            document.getElementById('p-gender').innerText = `Sex: ${p.gender}`;
-            document.getElementById('p-date').innerText = `Date: ${p.date}`;
-            
-            ['cc-list', 'oe-list', 'dx-list', 'rx-list'].forEach(id => document.getElementById(id).innerHTML = '');
-            rxCounter = 1;
-            switchView('prescription-view');
-        }
-
         function openModal(type) {
             currentModalType = type;
             const modal = document.getElementById('master-modal');
@@ -426,19 +449,16 @@
                         <button onclick="modifyText('${uid}', ' - উপরের পাটিতে')" class="mod-btn">উপরে</button>
                         <button onclick="modifyText('${uid}', ' - নিচের পাটিতে')" class="mod-btn">নিচে</button>
                     </div>
-                    
                     <div class="no-print flex flex-wrap gap-1 mt-2">
                         <span class="text-[11px] font-bold text-indigo-700 mr-1 mt-0.5">সময়:</span>
-                        <button onclick="modifyText('${uid}', ' (১ দিন )')" class="mod-btn">১ দিন</button>
-                        <button onclick="modifyText('${uid}', ' (২ দিন )')" class="mod-btn">২ দিন</button>
-                        <button onclick="modifyText('${uid}', ' (৩ দিন )')" class="mod-btn">৩ দিন</button>
-                        <button onclick="modifyText('${uid}', ' (১ সপ্তাহ)'')" class="mod-btn">১ সপ্তাহ</button>
-                        <button onclick="modifyText('${uid}', ' (১ মাস )')" class="mod-btn">১ মাস</button>
+                        <button onclick="modifyText('${uid}', ' (১ দিন যাবত)')" class="mod-btn">১ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (২ দিন যাবত)')" class="mod-btn">২ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (৩ দিন যাবত)')" class="mod-btn">৩ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (১ সপ্তাহ যাবত)')" class="mod-btn">১ সপ্তাহ</button>
+                        <button onclick="modifyText('${uid}', ' (১ মাস যাবত)')" class="mod-btn">১ মাস</button>
                         <button onclick="modifyText('${uid}', ' (১ সপ্তাহের বেশি)')" class="mod-btn">১ সপ্তাহের বেশি</button>
-                        <button onclick="modifyText('${uid}', ' (১ মাসের বেশি)')" class="mod-btn">১ মাসের বেশি</button>
-                        
                     </div>
-                `; 
+                `;
             }
 
             const bulletStyle = (currentModalType === 'dx') ? 'text-red-700' : 'text-gray-800';
