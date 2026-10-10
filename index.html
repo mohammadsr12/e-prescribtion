@@ -70,14 +70,14 @@
         <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-600">
             <h2 class="text-xl font-bold mb-4 text-gray-700 border-b pb-2">New Patient Entry</h2>
             <div class="space-y-4">
-                <div><label class="block text-sm font-bold text-gray-700">রোগীর নাম *</label><input type="text" id="a-name" class="w-full border p-2 rounded outline-none focus:border-indigo-500" placeholder="রোগীর নাম লিখুন"></div>
+                <div><label class="block text-sm font-bold text-gray-700">Patient name*</label><input type="text" id="a-name" class="w-full border p-2 rounded outline-none focus:border-indigo-500" placeholder="  "></div>
                 <div class="flex gap-4">
-                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">বয়স *</label><input type="text" id="a-age" class="w-full border p-2 rounded outline-none" placeholder="উদাঃ 35"></div>
-                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">লিঙ্গ</label>
-                        <select id="a-gender" class="w-full border p-2 rounded outline-none"><option>পুরুষ</option><option>মহিলা</option></select>
+                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">Age *</label><input type="text" id="a-age" class="w-full border p-2 rounded outline-none" placeholder="  "></div>
+                    <div class="w-1/2"><label class="block text-sm font-bold text-gray-700">Sex</label>
+                        <select id="a-gender" class="w-full border p-2 rounded outline-none"><option>Male</option><option>Female</option></select>
                     </div>
                 </div>
-                <div><label class="block text-sm font-bold text-gray-700">মোবাইল নাম্বার *</label><input type="text" id="a-phone" class="w-full border p-2 rounded outline-none" placeholder="01XXX-XXXXXX"></div>
+                <div><label class="block text-sm font-bold text-gray-700">Mobile No*</label><input type="text" id="a-phone" class="w-full border p-2 rounded outline-none" placeholder="01XXX-XXXXXX"></div>
                 <button onclick="addPatient()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded hover:bg-indigo-700 mt-4 shadow-md"> Add The Patient </button>
             </div>
         </div>
@@ -168,7 +168,7 @@
                         </div>
                         <ul id="rx-list" class="space-y-6 flex-1"></ul>
                         <div class="mt-6 font-bold text-[15px] text-gray-800 classic-font border-t pt-4">
-                            পরবর্তী সাক্ষাৎ: <span contenteditable="true" class="border-b border-dashed no-print outline-none px-2 text-indigo-600">৭ দিন পর</span>
+                            পরবর্তী সাক্ষাৎ: <span contenteditable="true" class="border-b border-dashed  outline-none px-2 text-indigo-600">৭ দিন পর</span>
                         </div>
                     </div>
                 </div>
@@ -213,14 +213,13 @@
                 document.getElementById('login-error').classList.add('hidden');
             } else {
                 document.getElementById('login-error').classList.remove('hidden');
-                document.getElementById('security-pin').value = ''; // ক্লিয়ার করে দিবে
+                document.getElementById('security-pin').value = ''; ে
             }
         }
 
         function logout() {
             sessionStorage.removeItem('isLoggedIn');
-            window.location.reload(); // পেজ রিলোড দিয়ে লগইন স্ক্রিনে নিয়ে যাবে
-        }
+            window.location.reload();
 
         // ================= FIREBASE CLOUD SETUP =================
         const firebaseConfig = {
@@ -255,9 +254,9 @@
             const age = document.getElementById('a-age').value;
             const gender = document.getElementById('a-gender').value;
             const phone = document.getElementById('a-phone').value;
-            if(!name || !age) { alert('নাম ও বয়স দিন!'); return; }
+            if(!name || !age) { alert('Please Enter Patient Name and Age!'); return; }
             
-            // Cloud Database এ সেভ করা হচ্ছে
+            // Cloud Database 
             db.collection("patients").add({
                 name: name,
                 age: age,
@@ -275,7 +274,7 @@
 
         function deletePatient(index) {
             const patientId = waitingList[index].id;
-            if(confirm("আপনি কি এই রোগীকে লিস্ট থেকে মুছে ফেলতে চান? (Data will be permanently deleted)")) {
+            if(confirm("Do you want to remove this patient? (Data will be permanently deleted)")) {
                 db.collection("patients").doc(patientId).delete();
             }
         }
@@ -438,15 +437,15 @@
             
             if(type === 'cc') {
                 header.className = "p-4 border-b flex justify-between items-center text-white rounded-t-lg bg-indigo-900";
-                title.innerText = "Chief Complaints Master List";
+                title.innerText = "Chief Complaints ";
                 renderModalBody(MASTER_CC);
             } else if(type === 'oe') {
                 header.className = "p-4 border-b flex justify-between items-center text-white rounded-t-lg bg-teal-700";
-                title.innerText = "On Examination Master List";
+                title.innerText = "On Examination ";
                 renderModalBody(MASTER_OE);
             } else if(type === 'dx') {
                 header.className = "p-4 border-b flex justify-between items-center text-white rounded-t-lg bg-red-700";
-                title.innerText = "Diagnosis Master List";
+                title.innerText = "Diagnosis ";
                 renderModalBody(MASTER_DX);
             }
             modal.classList.remove('hidden');
@@ -495,12 +494,13 @@
                     </div>
                     <div class="no-print flex flex-wrap gap-1 mt-2">
                         <span class="text-[11px] font-bold text-indigo-700 mr-1 mt-0.5">সময়:</span>
-                        <button onclick="modifyText('${uid}', ' (১ দিন যাবত)')" class="mod-btn">১ দিন</button>
-                        <button onclick="modifyText('${uid}', ' (২ দিন যাবত)')" class="mod-btn">২ দিন</button>
-                        <button onclick="modifyText('${uid}', ' (৩ দিন যাবত)')" class="mod-btn">৩ দিন</button>
-                        <button onclick="modifyText('${uid}', ' (১ সপ্তাহ যাবত)')" class="mod-btn">১ সপ্তাহ</button>
-                        <button onclick="modifyText('${uid}', ' (১ মাস যাবত)')" class="mod-btn">১ মাস</button>
+                        <button onclick="modifyText('${uid}', ' (১ দিন )')" class="mod-btn">১ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (২ দিন)')" class="mod-btn">২ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (৩ দিন )')" class="mod-btn">৩ দিন</button>
+                        <button onclick="modifyText('${uid}', ' (১ সপ্তাহ )')" class="mod-btn">১ সপ্তাহ</button>
+                        <button onclick="modifyText('${uid}', ' (১ মাস )')" class="mod-btn">১ মাস</button>
                         <button onclick="modifyText('${uid}', ' (১ সপ্তাহের বেশি)')" class="mod-btn">১ সপ্তাহের বেশি</button>
+                        <button onclick="modifyText('${uid}', ' (১ মাসের বেশি)')" class="mod-btn">১ মাসের বেশি</button>
                     </div>
                 `;
             }
